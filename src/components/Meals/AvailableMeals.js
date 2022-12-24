@@ -1,51 +1,71 @@
-import classes from "./AvailableMeals.module.css";
-import Card from "../UI/Card";
-import MealItem from "./MealItem/MealItem";
+import Card from '../UI/Card';
+import MealItem from './MealItem/MealItem';
+import classes from './AvailableMeals.module.css';
+import useHttp from '../../hooks/use-http';
+import { useState, useEffect } from 'react';
 
-const DUMMY_MEALS = [
-  {
-    id: "m1",
-    name: "Sushi",
-    description: "Finest fish and veggies",
-    price: 22.99,
-  },
-  {
-    id: "m2",
-    name: "Schnitzel",
-    description: "A german specialty!",
-    price: 16.5,
-  },
-  {
-    id: "m3",
-    name: "Barbecue Burger",
-    description: "American, raw, meaty",
-    price: 12.99,
-  },
-  {
-    id: "m4",
-    name: "Green Bowl",
-    description: "Healthy...and green...",
-    price: 18.99,
-  },
-];
+
 
 const AvailableMeals = () => {
-  const mealsList = DUMMY_MEALS.map((meal) => (
+  const [meals, setMeals] = useState([]);
+
+  const { isLoading, error, sendRequest: fetchMeals } = useHttp();
+
+  useEffect(() => {
+    const transformMeals = (mealsObj) => {
+      const loadedMeals = [];
+
+      for (const mealKey in mealsObj) {
+        loadedMeals.push({ id: mealKey, key:mealKey,name:mealsObj[mealKey].name, description: mealsObj[mealKey].description, price: mealsObj[mealKey].price });
+      }
+
+      setMeals(loadedMeals);
+    };
+
+    fetchMeals(
+      { url: 'https://react-hhtp2-246ed-default-rtdb.firebaseio.com/meals.json' },
+      transformMeals
+    );
+  }, [fetchMeals]);
+
+
+  const mealsList = meals.map((meal) => (
     <MealItem
-      id={meal.id} // this is new!
       key={meal.id}
+      id={meal.id}
       name={meal.name}
       description={meal.description}
       price={meal.price}
     />
   ));
 
+  
+  let content = mealsList;
+
+  if (!mealsList.length > 0) {
+    content = <p>Non-available foods</p>; 
+  }
+
+
+  if (error) {
+    return <section className={classes.MealsError}>
+    <p>{error}</p>
+  </section>;
+  }
+
+  if (isLoading) {
+    return  <section className={classes.MealsLoading}>
+      <p>Loading...</p>
+    </section>;
+  }
+
   return (
     <section className={classes.meals}>
       <Card>
-        <ul>{mealsList}</ul>
+        <ul>{content}</ul>
       </Card>
     </section>
   );
 };
+
 export default AvailableMeals;
